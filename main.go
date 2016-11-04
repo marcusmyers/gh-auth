@@ -18,9 +18,10 @@ type SSHKey struct {
 	Key string `json:"key"`
 }
 
+var home = os.Getenv("HOME")
+var url = "https://api.github.com"
+
 func main() {
-	home := os.Getenv("HOME")
-	url := "https://api.github.com"
 	app := cli.NewApp()
 	app.Name = "gh-auth"
 	app.Version = "1.0.0"
@@ -37,75 +38,90 @@ func main() {
 			Name:      "list",
 			Usage:     "gh-auth list",
 			UsageText: "list - list all users in authorized_keys file",
-			Action: func(c *cli.Context) error {
-				f, err := readAuthorizedKeys()
-				if err != nil {
-					log.Fatal(err)
-				}
-				arrUsers := _getUsers(string(f))
-				fmt.Println(strings.Join(arrUsers, " "))
-				return nil
-			},
+			Action:    listUsers,
 		},
 		{
 			Name:        "add",
 			Description: "add github user to your authorized_keys file",
 			Usage:       "gh-auth add",
 			ArgsUsage:   "[github_username]",
-			Action: func(c *cli.Context) error {
-				var user = c.Args().First()
-				resp, err := http.Get(url + "/users/" + user + "/keys")
-				if err != nil {
-					log.Fatal(err)
-				}
-				dec := json.NewDecoder(resp.Body)
-				s := make([]SSHKey, 0, 10)
-				for {
-					if err := dec.Decode(&s); err == io.EOF {
-						break
-					} else if err != nil {
-						log.Fatal(err)
-					}
-				}
-				resp.Body.Close()
-				str, numKeys := _returnStrKeys(s, user)
-				errCreate := _writeToAuthKeys(str, home)
-				if errCreate != nil {
-					log.Fatal(errCreate)
-				}
-				fmt.Printf("Adding %d key(s) to '%s/.ssh/authorized_keys'\n", numKeys, home)
-				return nil
-			},
+			Action:      addUser,
 		},
 		{
 			Name:        "remove",
 			Description: "remove github user to your authorized_keys file",
 			Usage:       "gh-auth remove",
 			ArgsUsage:   "[github_username]",
-			Action: func(c *cli.Context) error {
-				var user = c.Args().First()
-				f, err := readAuthorizedKeys()
-				if err != nil {
-					log.Fatal(err)
-				}
-				str, numKeys, errRemove := _removeUser(string(f), user, home)
-				if errRemove != nil {
-					log.Fatal(errRemove)
-				}
-				errCreate := _writeToAuthKeys(str, home)
-				if errCreate != nil {
-					log.Fatal(errCreate)
-				}
-				fmt.Printf("Removed %d key(s) to '%s/.ssh/authorized_keys'\n", numKeys, home)
-				return nil
-			},
+			Action:      removeUser,
 		},
 	}
 
 	app.Run(os.Args)
 }
 
-func _returnStrKeys(d []SSHKey, user string) (k string, n int) {
+func listUsers(c *cli.Context) error {
+	f, err := readAuthorizedKeys()
+	if err != nil {
+		log.Fatal(err)
+	}
+	arrUsers := _getUsers(string(f))
+	fmt.Println(strings.Join(arrUsers, " "))
+	return nil
+}
+
+func addUser(c *cli.Context) error {
+	var user = c.Args().First()
+	resp, err := http.Get(url + "/users/" + user + "/keys")
+	if err != nil {
+		log.Fatal(err)
+	}
+	dec := json.NewDecoder(resp.Body)
+	s := make([]SSHKey, 0, 10)
+	for {
+		if err := dec.Decode(&s); err == io.EOF {
+			break
+		} else if err != nil {
+			log.Fatal(err)
+		}
+	}
+	resp.Body.Close()
+	str, numKeys := _returnStrKeys(s, user)
+	errCreate := _writeToAuthKeys(str, home)
+	if errCreate != nil {
+		log.Fatal(errCreate)
+	}
+	fmt.Printf("Adding %d key(s) to '%s/.ssh/authorized_keys'\n", numKeys, home)
+	return nil
+}
+
+func removeUser(c *cli.Context) error {
+	var user = c.Args().First()
+	f, err := readAuthorizedKeys()
+	if err != nil {
+		log.Fatal(err)
+	}
+	str, numKeys, errRemove := _removeUser(string(f), user, home)
+	if errRemove != nil {
+		log.Fatal(errRemove)
+	}
+	errCreate := _writeToAuthKeys(str, home)
+	if errCreate != nil {
+		log.Fatal(errCreate)
+	}
+	fmt.Printf("Removed %d key(s) to '%s/.ssh/authorized_keys'\n", numKeys, home)
+	return nil
+}
+
+func readAuthorizedKeys() ([]byte, error) {
+	usersHome := os.Getenv("HOME")
+	f, err := ioutil.ReadFile(usersHome + "/.ssh/authorized_keys")
+	if err != nil {
+		return []byte{}, err
+	}
+	return f, nil
+}
+
+func _returnStrKeys(d []SSHKey, user string) (string, int) {
 	var tmpStr string
 	i := 0
 	for key := range d {
@@ -116,7 +132,7 @@ func _returnStrKeys(d []SSHKey, user string) (k string, n int) {
 	return tmpStr, i
 }
 
-func _removeUser(filecontent string, user string, dir string) (s string, n int, e error) {
+func _removeUser(filecontent string, user string, dir string) (string, int, error) {
 	arrLines := strings.Split(filecontent, "\n")
 	var tmpStr string
 	j := 0
@@ -131,7 +147,7 @@ func _removeUser(filecontent string, user string, dir string) (s string, n int, 
 	return tmpStr, j, err
 }
 
-func _getUsers(filestring string) (u []string) {
+func _getUsers(filestring string) []string {
 	arrLines := strings.Split(filestring, "\n")
 	users := make([]string, 0, 10)
 	for i := 0; i < len(arrLines)-1; i++ {
@@ -152,15 +168,6 @@ func _writeToAuthKeys(content string, dir string) error {
 		log.Fatal(errFile)
 	}
 	return nil
-}
-
-func readAuthorizedKeys() (file []byte, e error) {
-	usersHome := os.Getenv("HOME")
-	f, err := ioutil.ReadFile(usersHome + "/.ssh/authorized_keys")
-	if err != nil {
-		return []byte{}, err
-	}
-	return f, nil
 }
 
 func inArray(s []string, t string) bool {

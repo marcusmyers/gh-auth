@@ -1,4 +1,4 @@
-package main_test
+package main
 
 import (
 	"os"
@@ -10,12 +10,22 @@ type TestSSHKey struct {
 	Key string `json:"key"`
 }
 
-var home string
-
 func init() {
 	home = os.Getenv("HOME")
+	url = "https://api.github.com"
 }
 
-func TestAddUserToAuthorizedKeys(t *testing.T) {
+func testReadAuthorizedKeys(t *testing.T) {
+	content, err := readAuthorizedKeys()
+	if err != nil {
+		t.Error("Expecting to read the autorized_keys file, but got", err)
+	}
+}
 
+func testGettingUsers(t *testing.T) {
+	expected := "crwenner"
+	actual := _getUsers("Admaksdue== crwenner")
+	if expected != actual[0] {
+		t.Error("Expecting crwenner, but got", actual)
+	}
 }
