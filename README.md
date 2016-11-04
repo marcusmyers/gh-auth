@@ -15,6 +15,33 @@ by adding and removing their public ssh keys from your
 
 ## Ussage
 
+### Command Line
+```
+$ gh-auth
+NAME:
+   gh-auth - allows you to quickly pair with anyone who has a GitHub
+account
+
+USAGE:
+   gh-auth [global options] command [command options] [arguments...]
+
+VERSION:
+   1.0.0
+
+AUTHOR(S):
+   Mark Myers <marcusmyers@gmail>
+
+COMMANDS:
+     list     gh-auth list
+     add      gh-auth add
+     remove   gh-auth remove
+     help, h  Shows a list of commands or help for one command
+
+GLOBAL OPTIONS:
+   --help, -h     show help
+   --version, -v  print the version
+```
+
 ### Adding a user
 ```bash
 $ gh-auth add marcusmyers
