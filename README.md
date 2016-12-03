@@ -1,8 +1,8 @@
 # gh-auth
 
-This is a php port of Chris Hunt's
+This is a `go` port of Chris Hunt's
 [github-auth](https://github.com/chrishunt/github-auth).  I did this
-mainly to learn `go` programming language.
+mainly to learn the `go` programming language.
 
 ### Pairing with strangers has never been so good.
 
