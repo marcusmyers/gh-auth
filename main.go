@@ -3,7 +3,6 @@ package main //import "github.com/marcusmyers/gh-auth"
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -77,12 +76,9 @@ func addUser(c *cli.Context) error {
 	}
 	dec := json.NewDecoder(resp.Body)
 	s := make([]SSHKey, 0, 10)
-	for {
-		if err := dec.Decode(&s); err == io.EOF {
-			break
-		} else if err != nil {
-			log.Fatal(err)
-		}
+	json_err := dec.Decode(&s)
+	if json_err != nil {
+		log.Fatal(json_err)
 	}
 	resp.Body.Close()
 	str, numKeys := _returnStrKeys(s, user)
